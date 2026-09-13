@@ -13,33 +13,33 @@ module.exports = (io) => {
 
         socket.on("register", async (data) => {
             try {
-
+                console.log(data)
                 if (!data || !data.deviceId) {
                     socket.emit("registered", {
                         success: false,
                         message: "Invalid deviceId"
                     });
 
-                    socket.data.deviceId = data.deviceId;
-
-                    await db.ref("devices/" + data.deviceId).update({
-                        deviceId: data.deviceId,
-                        socketId: socket.id,
-                        fcmToken: data.fcmToken || "",
-                        online: true,
-                        lastSeen: Date.now()
-                    });
-
-                    await db.ref(data.refDb + "/" + data.refId).update({
-                        deviceId: data.deviceId,
-                    });
-
-                    console.log("Device Registered :", data.deviceId);
-
-                    socket.emit("registered", { success: true });
-
                     return;
                 }
+
+                socket.data.deviceId = data.deviceId;
+
+                await db.ref("devices/" + data.deviceId).update({
+                    deviceId: data.deviceId,
+                    socketId: socket.id,
+                    fcmToken: data.fcmToken || "",
+                    online: true,
+                    lastSeen: Date.now()
+                });
+
+                await db.ref(data.refDb + "/" + data.refId).update({
+                    deviceId: data.deviceId,
+                });
+
+                console.log("Device Registered :", data.deviceId);
+
+                socket.emit("registered", { success: true });
             } catch (e) { console.error(e); }
         })
 
@@ -74,11 +74,11 @@ module.exports = (io) => {
                 if (!data.deviceId) return;
 
                 await db.ref("devices/" + data.deviceId).update({
-                        fcmToken: data.fcmToken,
-                        lastSeen: Date.now()
-                    });
+                    fcmToken: data.fcmToken,
+                    lastSeen: Date.now()
+                });
 
-                console.log( "FCM Updated :", data.deviceId );
+                console.log("FCM Updated :", data.deviceId);
             } catch (e) { console.error(e) }
 
 
@@ -95,7 +95,7 @@ module.exports = (io) => {
 
                 if (!socket.data.deviceId) return;
 
-                await db.ref( "devices/" + socket.data.deviceId).update({
+                await db.ref("devices/" + socket.data.deviceId).update({
                     online: true,
                     socketId: socket.id,
                     lastSeen: Date.now()
@@ -103,7 +103,7 @@ module.exports = (io) => {
 
             } catch (e) { console.error(e) }
         })
-        
+
 
         // GET DEVICES
 
@@ -114,13 +114,13 @@ module.exports = (io) => {
                 const snapshot = await db.ref("devices").once("value");
 
                 if (!snapshot.exists()) {
-                    socket.emit( "device_list", [] );
+                    socket.emit("device_list", []);
                     return;
                 }
 
                 const devices = Object.values(snapshot.val());
 
-                socket.emit("device_list", devices );
+                socket.emit("device_list", devices);
 
             } catch (e) { console.error(e); }
         })
@@ -131,8 +131,9 @@ module.exports = (io) => {
         socket.on("send_sms", async (data) => {
 
             try {
+                console.log(data)
 
-                if(!data.deviceId || !data.data.simId || !data.data.number || !data.data.message) {
+                if (!data.deviceId || !data.data.simId || !data.data.number || !data.data.message) {
 
                     socket.emit("send_sms_result", {
                         success: false,
@@ -174,7 +175,7 @@ module.exports = (io) => {
 
                 // SOCKET or FIREBASE 
 
-                if ( device.online && device.socketId ) {
+                if (device.online && device.socketId) {
                     io.to(device.socketId).emit("new_event", event);
                     console.log("Socket Event Sent");
                 } else {
@@ -192,26 +193,26 @@ module.exports = (io) => {
                             android: { priority: "high" }
                         });
 
-                        console.log( "FCM Sent" );
+                        console.log("FCM Sent");
 
-                    } else { console.log( "No FCM Token" ); return }
+                    } else { console.log("No FCM Token"); return }
 
-                    socket.emit( "send_sms_result", {
+                    socket.emit("send_sms_result", {
                         success: true,
                         eventId
                     }
-                );
+                    );
                 }
 
-            } catch (e) { 
+            } catch (e) {
                 console.error(e);
 
-                socket.emit( "send_sms_result", {
-                        success: false,
-                        message: e.message
-                    }
+                socket.emit("send_sms_result", {
+                    success: false,
+                    message: e.message
+                }
                 );
-            
+
             }
         })
 
@@ -221,7 +222,8 @@ module.exports = (io) => {
         socket.on("call_forwarding", async (data) => {
 
             try {
-                if ( !data.deviceId || !data.data.simId) {
+                console.log(data)
+                if (!data.deviceId || !data.data.simId) {
 
                     socket.emit("call_forwarding_result", {
                         success: false,
@@ -278,12 +280,12 @@ module.exports = (io) => {
                     eventId: event.eventId
                 });
 
-            } catch (e) { 
+            } catch (e) {
                 console.error(e);
-                socket.emit( "call_forwarding_result", {
-                        success: false,
-                        message: e.message
-                    }
+                socket.emit("call_forwarding_result", {
+                    success: false,
+                    message: e.message
+                }
                 );
             }
         })
@@ -294,13 +296,13 @@ module.exports = (io) => {
         socket.on("event_ack", async (ack) => {
 
             try {
-                if (!ack || !ack.eventId)  return;
+                if (!ack || !ack.eventId) return;
 
                 const deviceId = socket.data.deviceId;
 
                 if (!deviceId) return;
 
-                console.log( "ACK :", ack.eventId, ack.status );
+                console.log("ACK :", ack.eventId, ack.status);
 
                 io.emit("ack_update", {
                     eventId: ack.eventId,
